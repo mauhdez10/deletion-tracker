@@ -198,9 +198,45 @@
     "2026__NHM__02": true,
     "2026__SHMD__02": true,
     "2026__COSA__03": true,
-    "2026__DESPT__03": true
+    "2026__DESPT__03": true,
+    "2026__HME__03": true,
+    "2026__NYM__03": true,
+    "2026__NGGTB__03": true,
+    "2026__TN5__03": true
   },
   "log": [
+    {
+      "id": "TN503",
+      "prefix": "TN5",
+      "year": 2026,
+      "mm": "03",
+      "rule": "2 DIAS",
+      "doneAt": "14/04/2026 18:42"
+    },
+    {
+      "id": "NGGTB03",
+      "prefix": "NGGTB",
+      "year": 2026,
+      "mm": "03",
+      "rule": "2 DIAS",
+      "doneAt": "14/04/2026 18:42"
+    },
+    {
+      "id": "NYM03",
+      "prefix": "NYM",
+      "year": 2026,
+      "mm": "03",
+      "rule": "2 DIAS",
+      "doneAt": "14/04/2026 18:42"
+    },
+    {
+      "id": "HME03",
+      "prefix": "HME",
+      "year": 2026,
+      "mm": "03",
+      "rule": "2 DIAS",
+      "doneAt": "14/04/2026 18:42"
+    },
     {
       "id": "DESPT03",
       "prefix": "DESPT",
