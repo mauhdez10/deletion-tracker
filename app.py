@@ -364,27 +364,44 @@ def render_action_bar(data, button_prefix: str):
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-def render_id_card(data, year: int, prefix: str, mm: str, channel: str):
+def render_id_card(data, year: int, prefix: str, mm: str, channel: str, view_scope: str):
     label_id = f"{prefix}{mm}"
     sel_key = selection_key(year, prefix, mm)
+    widget_key = f"{view_scope}__{sel_key}"
+
+    if widget_key not in st.session_state:
+        st.session_state[widget_key] = st.session_state.get(sel_key, False)
 
     c1, c2 = st.columns([3, 1])
     with c1:
-        st.checkbox(
+        checked = st.checkbox(
             f"{label_id}   ·   {year}",
-            key=sel_key,
+            key=widget_key,
             help=f"{channel} | {label_id}"
         )
+        st.session_state[sel_key] = checked
     with c2:
-        copy_button(label_id, key=f"copy_{channel}_{year}_{label_id}")
+        copy_button(label_id, key=f"copy_{view_scope}_{channel}_{year}_{label_id}")
 
-def render_channel_content(data, channel: str, today: date, button_prefix: str, show_header=True):
+def render_channel_content(
+    data,
+    channel: str,
+    today: date,
+    button_prefix: str,
+    show_header=True,
+    show_actions=True,
+    view_scope=None,
+):
     prefixes = data["channels"][channel]
+
+    if view_scope is None:
+        view_scope = button_prefix
 
     if show_header:
         st.markdown(f"### {channel}")
 
-    render_action_bar(data, button_prefix)
+    if show_actions:
+        render_action_bar(data, button_prefix)
 
     groups = {}
     for item in prefixes:
@@ -441,20 +458,27 @@ def render_channel_content(data, channel: str, today: date, button_prefix: str, 
             cols = st.columns(3)
             for idx, (yr, prefix, mm) in enumerate(pending_items):
                 with cols[idx % 3]:
-                    render_id_card(data, yr, prefix, mm, channel)
+                    render_id_card(data, yr, prefix, mm, channel, view_scope=view_scope)
         else:
             st.caption("Nada pendiente en esta regla.")
 
     if not any_pending:
         st.success("No hay IDs pendientes en este canal.")
-
 def render_all_channels_tab(data, today: date):
     render_action_bar(data, "all_channels")
 
     channels = list(data["channels"].keys())
     for channel in channels:
         st.markdown(f"## {channel}")
-        render_channel_content(data, channel, today, f"all_{channel}", show_header=False)
+        render_channel_content(
+            data,
+            channel,
+            today,
+            button_prefix=f"all_{channel}",
+            show_header=False,
+            show_actions=False,
+            view_scope=f"alltab_{channel}",
+        )
         st.divider()
 
 # ── App ───────────────────────────────────────────────────────────────────────
@@ -489,7 +513,15 @@ with tabs[0]:
 # ── Channel tabs ──────────────────────────────────────────────────────────────
 for i, channel in enumerate(channels, start=1):
     with tabs[i]:
-        render_channel_content(data, channel, today, f"channel_{channel}")
+        render_channel_content(
+    data,
+    channel,
+    today,
+    button_prefix=f"channel_{channel}",
+    show_header=True,
+    show_actions=True,
+    view_scope=f"channeltab_{channel}",
+)
 
 # ── Admin tab ─────────────────────────────────────────────────────────────────
 with tabs[len(channels) + 1]:
