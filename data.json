@@ -187,9 +187,18 @@
   },
   "checked": {
     "2026__TMPN__03": true,
-    "2026__TMPN__02": true
+    "2026__TMPN__02": true,
+    "2026__ENSV__03": true
   },
   "log": [
+    {
+      "id": "ENSV03",
+      "prefix": "ENSV",
+      "year": 2026,
+      "mm": "03",
+      "rule": "2 DIAS",
+      "doneAt": "14/04/2026 16:20"
+    },
     {
       "id": "TMPN02",
       "prefix": "TMPN",
