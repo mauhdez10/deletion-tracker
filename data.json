@@ -194,9 +194,18 @@
     "2026__MISA__03": true,
     "2026__HME__02": true,
     "2026__NHM__03": true,
-    "2026__TCSSV__03": true
+    "2026__TCSSV__03": true,
+    "2026__NHM__02": true
   },
   "log": [
+    {
+      "id": "NHM02",
+      "prefix": "NHM",
+      "year": 2026,
+      "mm": "02",
+      "rule": "2 DIAS",
+      "doneAt": "14/04/2026 16:40"
+    },
     {
       "id": "TCSSV03",
       "prefix": "TCSSV",
