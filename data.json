@@ -189,9 +189,18 @@
     "2026__TMPN__03": true,
     "2026__TMPN__02": true,
     "2026__ENSV__03": true,
-    "2026__ENSV__02": true
+    "2026__ENSV__02": true,
+    "2026__NP__03": true
   },
   "log": [
+    {
+      "id": "NP03",
+      "prefix": "NP",
+      "year": 2026,
+      "mm": "03",
+      "rule": "2 DIAS",
+      "doneAt": "14/04/2026 16:21"
+    },
     {
       "id": "ENSV02",
       "prefix": "ENSV",
