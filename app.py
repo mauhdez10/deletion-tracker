@@ -6,10 +6,8 @@ import requests
 from datetime import date, datetime, timedelta
 from html import escape
 
-# ── Page ───────────────────────────────────────────────────────────────
 st.set_page_config(page_title="Guía de Borrado", page_icon="🗑️", layout="wide")
 
-# ── GitHub ─────────────────────────────────────────────────────────────
 GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
 GITHUB_REPO = st.secrets["GITHUB_REPO"]
 DATA_FILE = "data.json"
@@ -43,7 +41,6 @@ def save_data(data, sha):
     load_data.clear()
     return r.json()["content"]["sha"]
 
-# ── Logic ──────────────────────────────────────────────────────────────
 RULE_DAYS = {
     "2 DIAS": 2,
     "1 SEMANA": 7,
@@ -92,7 +89,10 @@ def commit(data):
             "year": int(y),
             "mm": m,
             "doneAt": datetime.now().strftime("%d/%m/%Y %H:%M"),
-        }] + data["log"]
+        }] + [
+            e for e in data["log"]
+            if not (e["prefix"] == p and e["mm"] == m and e["year"] == int(y))
+        ]
 
         st.session_state.selected.discard(key)
         count += 1
@@ -100,10 +100,14 @@ def commit(data):
 
 def undo(data, y, p, m):
     data["checked"].pop(k(y, p, m), None)
-    data["log"] = [
-        e for e in data["log"]
-        if not (e["prefix"] == p and e["mm"] == m and e["year"] == y)
-    ]
+    removed = False
+    new_log = []
+    for e in data["log"]:
+        if not removed and e["prefix"] == p and e["mm"] == m and e["year"] == y:
+            removed = True
+            continue
+        new_log.append(e)
+    data["log"] = new_log
 
 def copy_btn(text, key):
     safe = json.dumps(text)
@@ -121,24 +125,24 @@ def copy_btn(text, key):
     </button>
     """, height=40)
 
-def action_bar(data):
+def action_bar(data, scope):
     ensure_sel()
     c = len(st.session_state.selected)
 
     col1, col2 = st.columns(2)
 
-    if col1.button(f"Done ({c})"):
+    if col1.button(f"Done ({c})", key=f"done_{scope}"):
         if c > 0:
+            commit(data)
             new_sha = save_data(data, st.session_state.sha)
             st.session_state.data, _ = load_data()
             st.session_state.sha = new_sha
             st.rerun()
 
-    if col2.button("Clear"):
+    if col2.button("Clear", key=f"clear_{scope}"):
         st.session_state.selected = set()
         st.rerun()
 
-# ── App ────────────────────────────────────────────────────────────────
 today = date.today()
 
 if "data" not in st.session_state:
@@ -151,9 +155,8 @@ ensure_sel()
 
 tabs = st.tabs(["Todos"] + list(data["channels"].keys()) + ["Log"])
 
-# ── TODOS ──────────────────────────────────────────────────────────────
 with tabs[0]:
-    action_bar(data)
+    action_bar(data, "todos")
 
     for ch, items in data["channels"].items():
         st.subheader(ch)
@@ -169,16 +172,15 @@ with tabs[0]:
                     val = st.checkbox(
                         f"{it['prefix']}{m}",
                         value=is_sel(y, it["prefix"], m),
-                        key=f"t_{y}_{it['prefix']}_{m}"
+                        key=f"t_{ch}_{y}_{it['prefix']}_{m}"
                     )
                     set_sel(y, it["prefix"], m, val)
-                    copy_btn(it["prefix"] + m, f"c_{ch}_{i}")
+                    copy_btn(it["prefix"] + m, f"c_{ch}_{i}_{y}_{it['prefix']}_{m}")
                 i += 1
 
-# ── CHANNELS ───────────────────────────────────────────────────────────
 for idx, ch in enumerate(data["channels"].keys(), start=1):
     with tabs[idx]:
-        action_bar(data)
+        action_bar(data, f"channel_{ch}")
         items = data["channels"][ch]
         cols = st.columns(3)
         i = 0
@@ -195,21 +197,23 @@ for idx, ch in enumerate(data["channels"].keys(), start=1):
                         key=f"{ch}_{y}_{it['prefix']}_{m}"
                     )
                     set_sel(y, it["prefix"], m, val)
-                    copy_btn(it["prefix"] + m, f"{ch}_{i}")
+                    copy_btn(it["prefix"] + m, f"{ch}_{i}_{y}_{it['prefix']}_{m}")
                 i += 1
 
-# ── LOG ────────────────────────────────────────────────────────────────
 with tabs[-1]:
     st.markdown("### Log")
 
     for i, e in enumerate(data["log"][:200]):
-        c1, c2 = st.columns([3, 1])
+        c1, c2, c3 = st.columns([3, 1, 1])
 
         with c1:
             st.write(f"{e['id']}  ({e['doneAt']})")
 
         with c2:
-            if st.button("Recuperar", key=f"undo_{i}"):
+            copy_btn(e["id"], f"log_copy_{i}_{e['id']}")
+
+        with c3:
+            if st.button("Recuperar", key=f"undo_{i}_{e['year']}_{e['prefix']}_{e['mm']}"):
                 undo(data, e["year"], e["prefix"], e["mm"])
                 new_sha = save_data(data, st.session_state.sha)
                 st.session_state.data, _ = load_data()
