@@ -195,9 +195,36 @@
     "2026__HME__02": true,
     "2026__NHM__03": true,
     "2026__TCSSV__03": true,
-    "2026__NHM__02": true
+    "2026__NHM__02": true,
+    "2026__SHMD__02": true,
+    "2026__COSA__03": true,
+    "2026__DESPT__03": true
   },
   "log": [
+    {
+      "id": "DESPT03",
+      "prefix": "DESPT",
+      "year": 2026,
+      "mm": "03",
+      "rule": "1 SEMANA",
+      "doneAt": "14/04/2026 16:54"
+    },
+    {
+      "id": "COSA03",
+      "prefix": "COSA",
+      "year": 2026,
+      "mm": "03",
+      "rule": "1 SEMANA",
+      "doneAt": "14/04/2026 16:54"
+    },
+    {
+      "id": "SHMD02",
+      "prefix": "SHMD",
+      "year": 2026,
+      "mm": "02",
+      "rule": "1 SEMANA",
+      "doneAt": "14/04/2026 16:54"
+    },
     {
       "id": "NHM02",
       "prefix": "NHM",
