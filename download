@@ -1,0 +1,5 @@
+# .streamlit/secrets.toml
+# Add this file to Streamlit Cloud via the Secrets manager (never commit this file)
+
+GITHUB_TOKEN = "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+GITHUB_REPO  = "your-username/deletion-tracker"
