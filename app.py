@@ -86,6 +86,7 @@ div[data-testid="stButton"] button.id-pending {
     width: 100% !important;
     cursor: pointer !important;
     transition: border-color .15s, background .15s !important;
+    min-height: 62px !important;
 }
 div[data-testid="stButton"] button.id-pending:hover {
     border-color: #85B7EB !important;
@@ -102,6 +103,7 @@ div[data-testid="stButton"] button.id-selected {
     padding: 10px 14px !important;
     text-align: left !important;
     width: 100% !important;
+    min-height: 62px !important;
 }
 div[data-testid="stButton"] button.id-done {
     background: #E1F5EE !important;
@@ -115,6 +117,10 @@ div[data-testid="stButton"] button.id-done {
     text-align: left !important;
     width: 100% !important;
     cursor: default !important;
+    min-height: 62px !important;
+}
+.copy-wrap {
+    margin-top: 4px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -198,7 +204,7 @@ def fetch_from_github():
     return content, j["sha"]
 
 def save_to_github(data, sha):
-    body    = json.dumps(data, ensure_ascii=False, indent=2)
+    body = json.dumps(data, ensure_ascii=False, indent=2)
     encoded = base64.b64encode(body.encode("utf-8")).decode("utf-8")
     payload = {"message": f"update {datetime.utcnow().isoformat()}", "content": encoded}
     if sha:
@@ -211,13 +217,12 @@ def save_to_github(data, sha):
 def load_into_session():
     d, sha = fetch_from_github()
     st.session_state.data = d
-    st.session_state.sha  = sha
+    st.session_state.sha = sha
 
 def save_and_rerun(data):
     with st.spinner("Guardando…"):
         new_sha = save_to_github(data, st.session_state.sha)
     st.session_state.sha = new_sha
-    # Don't re-fetch from GitHub — our local data is already correct
     st.session_state.selected_ids = set()
     st.rerun()
 
@@ -236,13 +241,7 @@ RULE_BADGE = {
 }
 
 def eligible_months(rule, today):
-    """
-    Return the 2 most recent fully-elapsed months for this rule.
-    A month is eligible only when its last day is strictly before the cutoff date,
-    meaning the entire month has passed the retention window.
-    """
     cutoff = today - timedelta(days=RULE_DAYS.get(rule, 0))
-    # Last day of the month before cutoff.month
     d1 = date(cutoff.year, cutoff.month, 1) - timedelta(days=1)
     d2 = date(d1.year, d1.month, 1) - timedelta(days=1)
     return [(d1.year, d1.strftime("%m")), (d2.year, d2.strftime("%m"))]
@@ -297,7 +296,6 @@ def undo_done(data, year, prefix, mm):
     ]
 
 def commit_selected(data):
-    """Mark all selected IDs as done. Returns count committed."""
     count = 0
     for skey in list(st.session_state.selected_ids):
         year, prefix, mm = skey.split("__")
@@ -310,16 +308,20 @@ def commit_selected(data):
 # ── UI components ──────────────────────────────────────────────────────────────
 def copy_button(text, key):
     safe_text = json.dumps(text)
+    safe_key = escape(key)
     html = f"""
-    <button id="{key}" onclick='
-        navigator.clipboard.writeText({safe_text});
-        const b=document.getElementById("{key}");
-        const orig=b.innerText; b.innerText="✓ Copiado";
-        b.style.cssText="background:#E1F5EE;border:1px solid #5DCAA5;color:#0F6E56;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;width:100%";
-        setTimeout(()=>{{b.innerText=orig;b.style.cssText="background:#f5f5f5;border:1px solid #ddd;color:#555;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;width:100%"}},1200);
-    ' style="background:#f5f5f5;border:1px solid #ddd;color:#555;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;width:100%">📋 Copiar</button>
+    <div class="copy-wrap">
+        <button id="{safe_key}" onclick='
+            navigator.clipboard.writeText({safe_text});
+            const b=document.getElementById("{safe_key}");
+            const orig=b.innerText;
+            b.innerText="✓ Copiado";
+            b.style.cssText="background:#E1F5EE;border:1px solid #5DCAA5;color:#0F6E56;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;width:100%";
+            setTimeout(()=>{{b.innerText=orig;b.style.cssText="background:#f5f5f5;border:1px solid #ddd;color:#555;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;width:100%"}},1200);
+        ' style="background:#f5f5f5;border:1px solid #ddd;color:#555;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;width:100%">📋 Copiar</button>
+    </div>
     """
-    components.html(html, height=32, scrolling=False)
+    components.html(html, height=36, scrolling=False)
 
 def render_action_bar(data, scope):
     n = len(st.session_state.selected_ids)
@@ -350,49 +352,71 @@ def render_action_bar(data, scope):
         st.markdown("</div>", unsafe_allow_html=True)
 
 def render_id_card(data, year, prefix, mm, channel, scope):
-    """Single toggleable card. Click = select/deselect. Done = green, no interaction."""
     label_id = f"{prefix}{mm}"
-    btn_key   = f"idbtn__{scope}__{channel}__{year}__{prefix}__{mm}"
+    btn_key = f"idbtn__{scope}__{channel}__{year}__{prefix}__{mm}"
+    copy_key = f"copy__{scope}__{channel}__{year}__{prefix}__{mm}"
 
-    done     = is_done(data, year, prefix, mm)
+    done = is_done(data, year, prefix, mm)
     selected = is_selected(year, prefix, mm)
 
-    if done:
-        # Static green card — no button interaction needed
-        st.markdown(
-            f'<div style="background:#E1F5EE;border:1.5px solid #5DCAA5;border-radius:10px;'
-            f'padding:10px 14px;margin-bottom:8px;font-family:monospace;font-size:0.95rem;'
-            f'font-weight:600;color:#0F6E56;">✓ {label_id}'
-            f'<div style="font-size:0.72rem;color:#1D9E75;font-family:sans-serif;margin-top:2px">Año {year}</div>'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
-    else:
-        indicator = "☑" if selected else "☐"
-        btn_label = f"{indicator}  {label_id}\nAño {year}"
-        if st.button(btn_label, key=btn_key, use_container_width=True):
-            toggle_selected(year, prefix, mm)
-            st.rerun()
+    left, right = st.columns([4, 1])
+
+    with left:
+        if done:
+            st.markdown(
+                f'<div style="background:#E1F5EE;border:1.5px solid #5DCAA5;border-radius:10px;'
+                f'padding:10px 14px;margin-bottom:8px;font-family:monospace;font-size:0.95rem;'
+                f'font-weight:600;color:#0F6E56;">✓ {label_id}'
+                f'<div style="font-size:0.72rem;color:#1D9E75;font-family:sans-serif;margin-top:2px">Año {year}</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            indicator = "☑" if selected else "☐"
+            btn_label = f"{indicator}  {label_id}\nAño {year}"
+            if st.button(btn_label, key=btn_key, use_container_width=True):
+                toggle_selected(year, prefix, mm)
+                st.rerun()
+
+            class_name = "id-selected" if selected else "id-pending"
+            st.markdown(
+                f"""
+                <style>
+                div[data-testid="stButton"] button[kind][data-testid="baseButton-secondary"] {{
+                    }}
+                </style>
+                """,
+                unsafe_allow_html=True,
+            )
+            st.markdown(
+                f"""
+                <script>
+                </script>
+                """,
+                unsafe_allow_html=True,
+            )
+
+    with right:
+        copy_button(label_id, copy_key)
 
 def render_channel_blocks(data, channel, today, scope):
     prefixes = data["channels"][channel]
-    groups: dict = {}
+    groups = {}
     for item in prefixes:
         groups.setdefault(item["rule"], []).append(item)
 
-    all_ids    = [(yr, it["prefix"], mm) for it in prefixes for yr, mm in eligible_months(it["rule"], today)]
+    all_ids = [(yr, it["prefix"], mm) for it in prefixes for yr, mm in eligible_months(it["rule"], today)]
     done_count = sum(1 for yr, p, mm in all_ids if is_done(data, yr, p, mm))
-    total      = len(all_ids)
+    total = len(all_ids)
     st.progress(done_count / total if total else 0, text=f"{done_count}/{total} completados")
 
     any_pending = False
     for rule in sorted(groups.keys(), key=lambda r: RULE_ORDER.index(r) if r in RULE_ORDER else 999):
-        items      = groups[rule]
-        badge_cls  = RULE_BADGE.get(rule, "badge-nmes")
-        cutoff     = today - timedelta(days=RULE_DAYS.get(rule, 0))
+        items = groups[rule]
+        badge_cls = RULE_BADGE.get(rule, "badge-nmes")
+        cutoff = today - timedelta(days=RULE_DAYS.get(rule, 0))
 
-        # Collect only pending items grouped by year
-        by_year: dict = {}
+        by_year = {}
         for item in items:
             for yr, mm in eligible_months(item["rule"], today):
                 if not is_done(data, yr, item["prefix"], mm):
@@ -495,7 +519,7 @@ def render_admin(data):
 
         st.divider()
         st.markdown("**Prefijos actuales**")
-        grp: dict = {}
+        grp = {}
         for item in prefix_list:
             grp.setdefault(item["rule"], []).append(item)
         for rule in sorted(grp.keys(), key=lambda r: RULE_ORDER.index(r) if r in RULE_ORDER else 999):
@@ -583,7 +607,7 @@ if "data" not in st.session_state:
 if "selected_ids" not in st.session_state:
     st.session_state.selected_ids = set()
 
-data     = st.session_state.data
+data = st.session_state.data
 channels = list(data["channels"].keys())
 
 # Header
